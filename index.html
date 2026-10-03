@@ -1,0 +1,676 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f6eeee">
+  <title>心动评分表</title>
+  <style>
+    :root {
+      --ink: #58464a;
+      --muted: #876f74;
+      --rose: #b6848e;
+      --rose-dark: #8f626c;
+      --line: rgba(143, 98, 108, .24);
+      --glass: rgba(255, 252, 251, .73);
+      --shadow: 0 14px 38px rgba(107, 76, 82, .13);
+    }
+
+    * { box-sizing: border-box; }
+
+    html { background: #eee5e4; }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      color: var(--ink);
+      font-family: "Microsoft JhengHei", "Noto Sans SC", "Microsoft YaHei", "PingFang SC", sans-serif;
+      font-weight: 400;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    button, input { font: inherit; }
+    button { -webkit-tap-highlight-color: transparent; }
+
+    .page-shell {
+      width: min(100%, 430px);
+      min-height: 100svh;
+      margin: 0 auto;
+      padding-bottom: calc(22px + env(safe-area-inset-bottom));
+      background: #faf6f5;
+      box-shadow: 0 0 50px rgba(69, 51, 55, .12);
+    }
+
+    .score-sheet {
+      position: relative;
+      min-height: 820px;
+      padding: clamp(258px, 36vh, 310px) 16px 28px;
+      overflow: hidden;
+      isolation: isolate;
+      background-color: #fbf8f7;
+      background-image: url("assets/background.png");
+      background-position: top center;
+      background-size: 100% auto;
+      background-repeat: no-repeat;
+    }
+
+    .score-sheet::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      background: linear-gradient(180deg, transparent 25%, rgba(255,255,255,.03) 55%, rgba(255,255,255,.11));
+    }
+
+    .round-field {
+      position: absolute;
+      top: clamp(212px, 29vh, 246px);
+      right: 18px;
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+      color: #71575d;
+      font-size: 14px;
+      letter-spacing: .08em;
+      white-space: nowrap;
+    }
+
+    .round-input {
+      width: 44px;
+      height: 28px;
+      padding: 0 4px;
+      border: 0;
+      border-bottom: 1px solid rgba(113, 87, 93, .62);
+      border-radius: 0;
+      outline: 0;
+      color: #6f4c55;
+      background: transparent;
+      text-align: center;
+      font-size: 16px;
+      caret-color: var(--rose-dark);
+    }
+
+    .round-input:focus { border-bottom-color: var(--rose-dark); }
+
+    .tables { display: grid; gap: 16px; }
+
+    .score-card {
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, .8);
+      border-radius: 17px;
+      background: var(--glass);
+      box-shadow: var(--shadow), inset 0 0 0 1px rgba(176, 131, 140, .12);
+      backdrop-filter: blur(9px);
+      -webkit-backdrop-filter: blur(9px);
+    }
+
+    .card-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      height: 37px;
+      padding: 0 13px;
+      border-bottom: 1px solid var(--line);
+      color: #806169;
+      font-size: 13px;
+      letter-spacing: .13em;
+    }
+
+    .card-label::before {
+      content: "";
+      width: 4px;
+      height: 13px;
+      border-radius: 9px;
+      background: #d5a8af;
+      box-shadow: 0 0 0 3px rgba(213, 168, 175, .14);
+    }
+
+    .table-wrap { overflow-x: auto; scrollbar-width: none; }
+    .table-wrap::-webkit-scrollbar { display: none; }
+
+    .score-table {
+      width: 100%;
+      min-width: 350px;
+      border-collapse: collapse;
+      table-layout: fixed;
+      text-align: center;
+    }
+
+    .score-table th,
+    .score-table td {
+      height: 42px;
+      padding: 0;
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      font-size: 12px;
+      font-weight: 400;
+    }
+
+    .score-table tr:last-child th,
+    .score-table tr:last-child td { border-bottom: 0; }
+
+    .score-table th:last-child,
+    .score-table td:last-child { border-right: 0; }
+
+    .score-table thead th {
+      height: 39px;
+      color: #7a5a62;
+      background: rgba(235, 216, 216, .34);
+      letter-spacing: .03em;
+    }
+
+    .score-table .corner,
+    .score-table .row-name {
+      width: 72px;
+      color: #765960;
+      background: rgba(246, 236, 234, .42);
+    }
+
+    .score-table .corner { color: #a68e93; font-size: 11px; }
+
+    .score-input {
+      width: 100%;
+      height: 100%;
+      padding: 3px;
+      border: 0;
+      outline: 0;
+      color: #694851;
+      background: transparent;
+      text-align: center;
+      font-size: 15px;
+      transition: background-color .16s ease;
+    }
+
+    .score-input:focus { background: rgba(255, 244, 242, .85); }
+    .score-input::placeholder { color: rgba(134, 107, 113, .3); }
+
+    .save-note {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      margin: 18px 0 0;
+      color: rgba(103, 79, 84, .72);
+      font-size: 11px;
+      letter-spacing: .06em;
+    }
+
+    .save-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: #c69ba3;
+      box-shadow: 0 0 0 3px rgba(198, 155, 163, .17);
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: .8fr 1.2fr;
+      gap: 11px;
+      padding: 15px 16px 0;
+      background: #faf6f5;
+    }
+
+    .button {
+      min-height: 48px;
+      border-radius: 14px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      font-size: 14px;
+      letter-spacing: .08em;
+      transition: transform .16s ease, box-shadow .16s ease, background-color .16s ease;
+    }
+
+    .button:active { transform: scale(.98); }
+
+    .button-secondary {
+      border-color: rgba(142, 100, 109, .28);
+      color: #795b62;
+      background: #fffafa;
+    }
+
+    .button-primary {
+      color: white;
+      background: #a87882;
+      box-shadow: 0 8px 18px rgba(130, 86, 96, .23);
+    }
+
+    .button:disabled { cursor: wait; opacity: .66; }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: calc(26px + env(safe-area-inset-bottom));
+      z-index: 20;
+      max-width: calc(100vw - 40px);
+      padding: 10px 16px;
+      border-radius: 999px;
+      color: white;
+      background: rgba(79, 57, 62, .9);
+      box-shadow: 0 8px 24px rgba(55, 35, 40, .2);
+      font-size: 13px;
+      opacity: 0;
+      pointer-events: none;
+      transform: translate(-50%, 12px);
+      transition: opacity .2s ease, transform .2s ease;
+    }
+
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+    .dialog-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 30;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: rgba(74, 55, 60, .28);
+      backdrop-filter: blur(4px);
+    }
+
+    .dialog-backdrop[hidden] { display: none; }
+
+    .dialog {
+      width: min(100%, 330px);
+      padding: 22px;
+      border: 1px solid rgba(255,255,255,.85);
+      border-radius: 19px;
+      color: var(--ink);
+      background: rgba(255, 251, 250, .96);
+      box-shadow: 0 18px 60px rgba(70, 47, 53, .24);
+    }
+
+    .dialog-title { margin: 0 0 8px; font-size: 16px; }
+    .dialog-copy { margin: 0; color: var(--muted); font-size: 13px; }
+    .dialog-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 20px; }
+
+    .dialog-button {
+      height: 42px;
+      border: 0;
+      border-radius: 11px;
+      cursor: pointer;
+      color: #71545b;
+      background: #f1e7e6;
+    }
+
+    .dialog-button.confirm { color: #fff; background: #a87882; }
+
+    @media (max-width: 360px) {
+      .score-sheet { padding-inline: 11px; }
+      .round-field { right: 14px; }
+      .score-table { min-width: 330px; }
+      .score-table .corner,
+      .score-table .row-name { width: 66px; }
+    }
+
+    @media (min-width: 431px) {
+      body { padding: 22px 0; }
+      .page-shell { min-height: calc(100svh - 44px); border-radius: 24px; overflow: hidden; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page-shell">
+    <section class="score-sheet" id="scoreSheet" aria-label="心动评分表">
+      <div class="round-field">
+        <span>第</span>
+        <input id="roundInput" class="round-input" type="text" inputmode="numeric" maxlength="3" aria-label="填写第几轮">
+        <span>轮打分</span>
+      </div>
+
+      <div class="tables" id="tables"></div>
+      <p class="save-note"><span class="save-dot"></span>内容已自动保存在本机</p>
+    </section>
+
+    <div class="actions" aria-label="操作按钮">
+      <button class="button button-secondary" id="clearBtn" type="button">清空内容</button>
+      <button class="button button-primary" id="exportBtn" type="button">导出图片</button>
+    </div>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <div class="dialog-backdrop" id="dialogBackdrop" hidden>
+    <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dialogTitle">
+      <p class="dialog-title" id="dialogTitle">确定清空所有内容吗？</p>
+      <p class="dialog-copy">轮次和全部分数都会被清除。</p>
+      <div class="dialog-actions">
+        <button class="dialog-button cancel" id="cancelClear" type="button">取消</button>
+        <button class="dialog-button confirm" id="confirmClear" type="button">确认清空</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const boys = ["顾星辰", "江叙白", "秋亦帆", "林泽宇"];
+    const girls = ["苏晚晴", "夏知柚", "许星眠", "温以宁"];
+    const storageKey = "soft-flower-score-sheet-v1";
+
+    const sections = [
+      { key: "boys", label: "男生评分", rows: boys, columns: girls },
+      { key: "girls", label: "女生评分", rows: girls, columns: boys }
+    ];
+
+    const tablesEl = document.getElementById("tables");
+    const roundInput = document.getElementById("roundInput");
+    const exportBtn = document.getElementById("exportBtn");
+    const clearBtn = document.getElementById("clearBtn");
+    const dialogBackdrop = document.getElementById("dialogBackdrop");
+    const cancelClear = document.getElementById("cancelClear");
+    const confirmClear = document.getElementById("confirmClear");
+    const toastEl = document.getElementById("toast");
+
+    let toastTimer;
+
+    function cellKey(sectionKey, rowIndex, columnIndex) {
+      return `${sectionKey}-${rowIndex}-${columnIndex}`;
+    }
+
+    function createTables() {
+      tablesEl.innerHTML = sections.map(section => `
+        <article class="score-card">
+          <div class="card-label">${section.label}</div>
+          <div class="table-wrap">
+            <table class="score-table">
+              <thead>
+                <tr>
+                  <th class="corner" scope="col">评分人</th>
+                  ${section.columns.map(name => `<th scope="col">${name}</th>`).join("")}
+                </tr>
+              </thead>
+              <tbody>
+                ${section.rows.map((rowName, rowIndex) => `
+                  <tr>
+                    <th class="row-name" scope="row">${rowName}</th>
+                    ${section.columns.map((_, columnIndex) => `
+                      <td>
+                        <input
+                          class="score-input"
+                          data-cell="${cellKey(section.key, rowIndex, columnIndex)}"
+                          type="text"
+                          inputmode="decimal"
+                          maxlength="6"
+                          autocomplete="off"
+                          aria-label="${rowName}给${section.columns[columnIndex]}的分数"
+                        >
+                      </td>
+                    `).join("")}
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          </div>
+        </article>
+      `).join("");
+    }
+
+    function getState() {
+      const scores = {};
+      document.querySelectorAll(".score-input").forEach(input => {
+        if (input.value !== "") scores[input.dataset.cell] = input.value;
+      });
+      return { round: roundInput.value, scores };
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(getState()));
+      } catch (error) {
+        showToast("当前浏览器无法保存内容");
+      }
+    }
+
+    function restoreState() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(storageKey) || "null");
+        if (!saved) return;
+        roundInput.value = saved.round || "";
+        Object.entries(saved.scores || {}).forEach(([key, value]) => {
+          const input = document.querySelector(`[data-cell="${key}"]`);
+          if (input) input.value = value;
+        });
+      } catch (error) {
+        localStorage.removeItem(storageKey);
+      }
+    }
+
+    function showToast(message) {
+      window.clearTimeout(toastTimer);
+      toastEl.textContent = message;
+      toastEl.classList.add("show");
+      toastTimer = window.setTimeout(() => toastEl.classList.remove("show"), 1900);
+    }
+
+    function openDialog() {
+      dialogBackdrop.hidden = false;
+      confirmClear.focus();
+    }
+
+    function closeDialog() {
+      dialogBackdrop.hidden = true;
+      clearBtn.focus();
+    }
+
+    function clearAll() {
+      roundInput.value = "";
+      document.querySelectorAll(".score-input").forEach(input => { input.value = ""; });
+      localStorage.removeItem(storageKey);
+      dialogBackdrop.hidden = true;
+      showToast("内容已清空");
+    }
+
+    function roundedRect(ctx, x, y, width, height, radius) {
+      const r = Math.min(radius, width / 2, height / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + width, y, x + width, y + height, r);
+      ctx.arcTo(x + width, y + height, x, y + height, r);
+      ctx.arcTo(x, y + height, x, y, r);
+      ctx.arcTo(x, y, x + width, y, r);
+      ctx.closePath();
+    }
+
+    function drawText(ctx, text, x, y, options = {}) {
+      const {
+        size = 28,
+        color = "#58464a",
+        align = "center",
+        baseline = "middle",
+        weight = "400"
+      } = options;
+      ctx.save();
+      ctx.fillStyle = color;
+      ctx.textAlign = align;
+      ctx.textBaseline = baseline;
+      ctx.font = `${weight} ${size}px "Microsoft JhengHei", "Noto Sans SC", "Microsoft YaHei", sans-serif`;
+      ctx.fillText(String(text), x, y);
+      ctx.restore();
+    }
+
+    function drawCard(ctx, section, values, x, y, width) {
+      const labelHeight = 78;
+      const headerHeight = 72;
+      const rowHeight = 80;
+      const height = labelHeight + headerHeight + rowHeight * section.rows.length;
+      const nameWidth = 180;
+      const columnWidth = (width - nameWidth) / section.columns.length;
+      const line = "rgba(143, 98, 108, .28)";
+
+      ctx.save();
+      ctx.shadowColor = "rgba(98, 68, 75, .16)";
+      ctx.shadowBlur = 34;
+      ctx.shadowOffsetY = 14;
+      roundedRect(ctx, x, y, width, height, 34);
+      ctx.fillStyle = "rgba(255, 252, 251, .84)";
+      ctx.fill();
+      ctx.restore();
+
+      ctx.save();
+      roundedRect(ctx, x, y, width, height, 34);
+      ctx.clip();
+
+      ctx.fillStyle = "rgba(235, 216, 216, .38)";
+      ctx.fillRect(x, y + labelHeight, width, headerHeight);
+      ctx.fillStyle = "rgba(246, 236, 234, .46)";
+      ctx.fillRect(x, y + labelHeight, nameWidth, height - labelHeight);
+
+      ctx.strokeStyle = line;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(x, y + labelHeight);
+      ctx.lineTo(x + width, y + labelHeight);
+      ctx.moveTo(x, y + labelHeight + headerHeight);
+      ctx.lineTo(x + width, y + labelHeight + headerHeight);
+      for (let row = 1; row <= section.rows.length; row += 1) {
+        const lineY = y + labelHeight + headerHeight + rowHeight * row;
+        ctx.moveTo(x, lineY);
+        ctx.lineTo(x + width, lineY);
+      }
+      ctx.moveTo(x + nameWidth, y + labelHeight);
+      ctx.lineTo(x + nameWidth, y + height);
+      for (let column = 1; column < section.columns.length; column += 1) {
+        const lineX = x + nameWidth + columnWidth * column;
+        ctx.moveTo(lineX, y + labelHeight);
+        ctx.lineTo(lineX, y + height);
+      }
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.save();
+      roundedRect(ctx, x, y, width, height, 34);
+      ctx.strokeStyle = "rgba(176, 131, 140, .25)";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.restore();
+
+      roundedRect(ctx, x + 28, y + 27, 8, 27, 8);
+      ctx.fillStyle = "#d5a8af";
+      ctx.fill();
+      drawText(ctx, section.label, x + 54, y + labelHeight / 2 + 1, {
+        size: 27, color: "#806169", align: "left"
+      });
+
+      drawText(ctx, "评分人", x + nameWidth / 2, y + labelHeight + headerHeight / 2, {
+        size: 22, color: "#a68e93"
+      });
+
+      section.columns.forEach((name, index) => {
+        drawText(ctx, name, x + nameWidth + columnWidth * (index + .5), y + labelHeight + headerHeight / 2, {
+          size: 24, color: "#765960"
+        });
+      });
+
+      section.rows.forEach((name, rowIndex) => {
+        const centerY = y + labelHeight + headerHeight + rowHeight * (rowIndex + .5);
+        drawText(ctx, name, x + nameWidth / 2, centerY, { size: 25, color: "#765960" });
+        section.columns.forEach((_, columnIndex) => {
+          const value = values[cellKey(section.key, rowIndex, columnIndex)] || "";
+          if (value !== "") {
+            drawText(ctx, value, x + nameWidth + columnWidth * (columnIndex + .5), centerY, {
+              size: 29, color: "#694851"
+            });
+          }
+        });
+      });
+
+      return height;
+    }
+
+    function loadBackground() {
+      return new Promise((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => resolve(image);
+        image.onerror = reject;
+        image.src = "assets/background.png";
+      });
+    }
+
+    async function exportImage() {
+      exportBtn.disabled = true;
+      exportBtn.textContent = "正在生成…";
+
+      try {
+        const background = await loadBackground();
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        const width = 1080;
+        const height = 1920;
+        canvas.width = width;
+        canvas.height = height;
+
+        const scale = Math.max(width / background.width, height / background.height);
+        const drawnWidth = background.width * scale;
+        const drawnHeight = background.height * scale;
+        ctx.drawImage(background, (width - drawnWidth) / 2, (height - drawnHeight) / 2, drawnWidth, drawnHeight);
+
+        const state = getState();
+        const roundY = 525;
+        drawText(ctx, "第", 780, roundY, { size: 31, color: "#71575d" });
+        drawText(ctx, state.round || "", 850, roundY - 3, { size: 35, color: "#6f4c55" });
+        ctx.strokeStyle = "rgba(113, 87, 93, .72)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(813, roundY + 22);
+        ctx.lineTo(887, roundY + 22);
+        ctx.stroke();
+        drawText(ctx, "轮打分", 963, roundY, { size: 31, color: "#71575d" });
+
+        const cardX = 44;
+        const cardWidth = width - cardX * 2;
+        let cardY = 588;
+        sections.forEach((section, index) => {
+          const cardHeight = drawCard(ctx, section, state.scores, cardX, cardY, cardWidth);
+          cardY += cardHeight + (index === 0 ? 32 : 0);
+        });
+
+        ctx.beginPath();
+        ctx.arc(width / 2 - 125, 1680, 6, 0, Math.PI * 2);
+        ctx.fillStyle = "#c69ba3";
+        ctx.fill();
+        drawText(ctx, "内容已自动保存在本机", width / 2 - 101, 1681, {
+          size: 23, color: "rgba(103, 79, 84, .76)", align: "left"
+        });
+
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
+        if (!blob) throw new Error("图片生成失败");
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `第${state.round || "未填写"}轮评分表.png`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+        showToast("图片已导出");
+      } catch (error) {
+        showToast("导出失败，请重试");
+      } finally {
+        exportBtn.disabled = false;
+        exportBtn.textContent = "导出图片";
+      }
+    }
+
+    createTables();
+    restoreState();
+
+    document.addEventListener("input", event => {
+      if (event.target.matches(".score-input, .round-input")) saveState();
+    });
+    clearBtn.addEventListener("click", openDialog);
+    cancelClear.addEventListener("click", closeDialog);
+    confirmClear.addEventListener("click", clearAll);
+    exportBtn.addEventListener("click", exportImage);
+    dialogBackdrop.addEventListener("click", event => {
+      if (event.target === dialogBackdrop) closeDialog();
+    });
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape" && !dialogBackdrop.hidden) closeDialog();
+    });
+  </script>
+</body>
+</html>
