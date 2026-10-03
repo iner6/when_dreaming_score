@@ -185,25 +185,6 @@
     .score-input:focus { background: rgba(255, 244, 242, .85); }
     .score-input::placeholder { color: rgba(134, 107, 113, .3); }
 
-    .save-note {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 7px;
-      margin: 18px 0 0;
-      color: rgba(103, 79, 84, .72);
-      font-size: 11px;
-      letter-spacing: .06em;
-    }
-
-    .save-dot {
-      width: 5px;
-      height: 5px;
-      border-radius: 50%;
-      background: #c69ba3;
-      box-shadow: 0 0 0 3px rgba(198, 155, 163, .17);
-    }
-
     .actions {
       display: grid;
       grid-template-columns: .8fr 1.2fr;
@@ -324,7 +305,6 @@
       </div>
 
       <div class="tables" id="tables"></div>
-      <p class="save-note"><span class="save-dot"></span>内容已自动保存在本机</p>
     </section>
 
     <div class="actions" aria-label="操作按钮">
@@ -626,14 +606,6 @@
         sections.forEach((section, index) => {
           const cardHeight = drawCard(ctx, section, state.scores, cardX, cardY, cardWidth);
           cardY += cardHeight + (index === 0 ? 32 : 0);
-        });
-
-        ctx.beginPath();
-        ctx.arc(width / 2 - 125, 1680, 6, 0, Math.PI * 2);
-        ctx.fillStyle = "#c69ba3";
-        ctx.fill();
-        drawText(ctx, "内容已自动保存在本机", width / 2 - 101, 1681, {
-          size: 23, color: "rgba(103, 79, 84, .76)", align: "left"
         });
 
         const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
